@@ -13,16 +13,18 @@ export default {
       .setTitle('💳 Cartellino Dipendenti')
       .setDescription(
         'Clicca sui pulsanti in basso per gestire il tuo turno di servizio.\n\n' +
-        '🟢 **Timbra** ➔ Inizia a registrare l\'orario di lavoro.\n' +
-        '🔴 **Stimbra** ➔ Termina il turno e calcola i minuti lavorati.\n' +
-        '🔵 **Info** ➔ Controlla il tuo stato attuale.'
+        '🟢 **Timbra** ➔ Inizia il turno di servizio.\n' +
+        '🔴 **Stimbra** ➔ Termina il turno e salva le ore svolte.\n' +
+        '🔵 **Info** ➔ Controlla le tue ore totali accumulate.\n' +
+        '👥 **In Servizio** ➔ Visualizza chi è attualmente timbrato.'
       )
       .setFooter({ text: 'Sistema Gestione Orari' });
 
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId('btn_timbra').setLabel('Timbra').setStyle(ButtonStyle.Success),
       new ButtonBuilder().setCustomId('btn_stimbra').setLabel('Stimbra').setStyle(ButtonStyle.Danger),
-      new ButtonBuilder().setCustomId('btn_info').setLabel('Info').setStyle(ButtonStyle.Primary)
+      new ButtonBuilder().setCustomId('btn_info').setLabel('Info').setStyle(ButtonStyle.Primary),
+      new ButtonBuilder().setCustomId('btn_inservizio').setLabel('In Servizio').setStyle(ButtonStyle.Secondary)
     );
 
     await interaction.reply({ embeds: [embed], components: [row] });
