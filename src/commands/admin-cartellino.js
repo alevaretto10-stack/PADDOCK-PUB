@@ -7,7 +7,6 @@ export default {
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
 
   async execute(interaction) {
-    // Importiamo le mappe dal gestore cartellino
     const { turniAttivi, oreTotaliAccumulate } = await import('../events/cartellinoHandler.js');
     const oraAttuale = new Date();
 
@@ -23,7 +22,11 @@ export default {
     } else {
       for (const [id, dati] of turniAttivi.entries()) {
         const minutiTurno = Math.floor((oraAttuale - dati.oraInizio) / (1000 * 60));
-        const orarioInizioStr = dati.oraInizio.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+        const orarioInizioStr = dati.oraInizio.toLocaleTimeString('it-IT', { 
+          timeZone: 'Europe/Rome', 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        });
         testoInServizio += `• **${dati.username}** (Dalle **${orarioInizioStr}** — da ${minutiTurno} min)\n`;
       }
     }
@@ -45,7 +48,6 @@ export default {
       { name: '📈 Ore Totali Accumulate (Storico Staff)', value: testoTotali }
     );
 
-    // Risposta riservata/ephemeral per chi usa il comando
     await interaction.reply({ embeds: [embed], flags: 64 });
   },
 };
