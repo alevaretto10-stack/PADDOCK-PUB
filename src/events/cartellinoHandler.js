@@ -8,11 +8,14 @@ export default {
   async execute(interaction) {
     if (!interaction.isButton()) return;
 
-    const { customId, user } = interaction;
+    const { customId, user, guild } = interaction;
     if (!['btn_timbra', 'btn_stimbra', 'btn_info', 'btn_inservizio'].includes(customId)) return;
 
     const userId = user.id;
     const oraAttuale = new Date();
+
+    // Cerca il canale per i log della dirigenza
+    const canaleLog = guild?.channels.cache.find(c => c.name === 'timbratura-dipendenti');
 
     // 🟢 AZIONE: TIMBRA
     if (customId === 'btn_timbra') {
@@ -23,14 +26,25 @@ export default {
       turniAttivi.set(userId, { oraInizio: oraAttuale, username: user.username });
       const orarioFormattato = oraAttuale.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
 
-      const embedTimbra = new EmbedBuilder()
+      // Embed PRIVATO per l'utente
+      const embedPrivato = new EmbedBuilder()
         .setColor('#22c55e')
         .setTitle('🟢 Entrata in Servizio')
         .setDescription(`Hai timbrato il cartellino alle **${orarioFormattato}**.\n*Il conteggio delle ore è iniziato.*`)
         .setTimestamp();
 
-      // Risposta visibile SOLO a chi clicca
-      await interaction.reply({ embeds: [embedTimbra], flags: 64 });
+      await interaction.reply({ embeds: [embedPrivato], flags: 64 });
+
+      // Embed PUBBLICO per il canale log dirigenza
+      if (canaleLog) {
+        const embedLog = new EmbedBuilder()
+          .setColor('#22c55e')
+          .setTitle('📥 Log Entrata Turno')
+          .setDescription(`👤 **Dipendente:** ${user} (${user.username})\n🕒 **Ora Entrata:** ${orarioFormattato}`)
+          .setTimestamp();
+
+        await canaleLog.send({ embeds: [embedLog] });
+      }
     }
 
     // 🔴 AZIONE: STIMBRA
@@ -52,7 +66,8 @@ export default {
 
       const orarioUscita = oraAttuale.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
 
-      const embedStimbra = new EmbedBuilder()
+      // Embed PRIVATO per l'utente
+      const embedPrivato = new EmbedBuilder()
         .setColor('#ef4444')
         .setTitle('🔴 Uscita dal Servizio')
         .setDescription(
@@ -62,8 +77,23 @@ export default {
         )
         .setTimestamp();
 
-      // Risposta visibile SOLO a chi clicca
-      await interaction.reply({ embeds: [embedStimbra], flags: 64 });
+      await interaction.reply({ embeds: [embedPrivato], flags: 64 });
+
+      // Embed PUBBLICO per il canale log dirigenza
+      if (canaleLog) {
+        const embedLog = new EmbedBuilder()
+          .setColor('#ef4444')
+          .setTitle('📤 Log Uscita Turno')
+          .setDescription(
+            `👤 **Dipendente:** ${user} (${user.username})\n` +
+            `🕒 **Ora Uscita:** ${orarioUscita}\n` +
+            `⏱️ **Durata Turno:** ${oreTurno}h ${minutiTurno}m\n` +
+            `📊 **Totale Accumulato Staff:** ${Math.floor(nuoviMinutiTotali / 60)}h ${nuoviMinutiTotali % 60}m`
+          )
+          .setTimestamp();
+
+        await canaleLog.send({ embeds: [embedLog] });
+      }
     }
 
     // 🔵 AZIONE: INFO (PRIVATO)
