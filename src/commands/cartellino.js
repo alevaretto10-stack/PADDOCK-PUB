@@ -7,6 +7,10 @@ export default {
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
   async execute(interaction) {
+    // 1. Avisa subito Discord che la risposta sta arrivando (evita il timeout in rosso)
+    await interaction.deferReply({ flags: 64 });
+
+    // 2. Costruzione della grafica
     const embed = new EmbedBuilder()
       .setColor('#3b82f6')
       .setAuthor({ name: 'Sistema Cartellino | Il Tuo Locale' })
@@ -29,7 +33,10 @@ export default {
       new ButtonBuilder().setCustomId('btn_inservizio').setLabel('In Servizio').setStyle(ButtonStyle.Primary)
     );
 
-    // Rispondi direttamente all'interazione in modo che Discord non vada in timeout
-    return await interaction.reply({ embeds: [embed], components: [row] });
+    // 3. Manda il messaggio visibile a tutti nel canale
+    await interaction.channel.send({ embeds: [embed], components: [row] });
+
+    // 4. Conferma l'invio solo all'admin che ha eseguito il comando
+    await interaction.editReply({ content: '✅ Pannello inviato con successo nel canale!' });
   },
 };
