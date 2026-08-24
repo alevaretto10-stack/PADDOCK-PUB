@@ -9,27 +9,22 @@ export default {
   async execute(interaction) {
     const embed = new EmbedBuilder()
       .setColor('#3b82f6')
-      .setAuthor({ name: 'Sistema Cartellino | Il Tuo Locale' })
-      .setTitle('💳 Sistema Cartellino Dipendenti')
+      .setAuthor({ name: 'Sistema Cartellino | Paddock Pub' })
+      .setTitle('💳 Cartellino Dipendenti')
       .setDescription(
-        'Benvenuto nel **sistema cartellini**!\n\n' +
-        '🟢 **Timbra** ➔ Inizia il turno di servizio.\n' +
-        '🔴 **Stimbra** ➔ Termina il turno di servizio.\n' +
-        '🟡 **Pausa** ➔ Metti in pausa il turno.\n' +
-        '🔵 **Info** ➔ Controlla le tue ore.\n' +
-        '👥 **In Servizio** ➔ Visualizza chi è timbrato.'
+        'Clicca sui pulsanti in basso per gestire il tuo turno di servizio.\n\n' +
+        '🟢 **Timbra** ➔ Inizia a registrare l\'orario di lavoro.\n' +
+        '🔴 **Stimbra** ➔ Termina il turno e calcola i minuti lavorati.\n' +
+        '🔵 **Info** ➔ Controlla il tuo stato attuale.'
       )
-      .setFooter({ text: 'Sistema Gestione Orari - Staff' });
+      .setFooter({ text: 'Sistema Gestione Orari' });
 
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId('btn_timbra').setLabel('Timbra').setStyle(ButtonStyle.Success),
       new ButtonBuilder().setCustomId('btn_stimbra').setLabel('Stimbra').setStyle(ButtonStyle.Danger),
-      new ButtonBuilder().setCustomId('btn_pausa').setLabel('Pausa').setStyle(ButtonStyle.Secondary),
-      new ButtonBuilder().setCustomId('btn_info').setLabel('Info').setStyle(ButtonStyle.Primary),
-      new ButtonBuilder().setCustomId('btn_inservizio').setLabel('In Servizio').setStyle(ButtonStyle.Primary)
+      new ButtonBuilder().setCustomId('btn_info').setLabel('Info').setStyle(ButtonStyle.Primary)
     );
 
-    // Rispondi DIRETTAMENTE all'interazione senza usare deferReply o channel.send
     await interaction.reply({ embeds: [embed], components: [row] });
   },
 };
