@@ -29,6 +29,7 @@ export default {
       new ButtonBuilder().setCustomId('btn_inservizio').setLabel('In Servizio').setStyle(ButtonStyle.Primary)
     );
 
-    await interaction.reply({ embeds: [embed], components: [row] });
+    // Rispondi direttamente all'interazione in modo che Discord non vada in timeout
+    return await interaction.reply({ embeds: [embed], components: [row] });
   },
 };
