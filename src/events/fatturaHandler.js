@@ -17,36 +17,31 @@ export default {
     if (!['select_fattura_base', 'select_fattura_vip'].includes(customId)) return;
 
     const canaleFatture = guild?.channels.cache.find(c => c.name === 'gestione-fatture');
-    const valoreSelezionato = values[0]; // es. base_5x5 oppure vip_5x5
-
-    const isVip = valoreSelezionato.startsWith('vip_');
-    const taglio = valoreSelezionato.replace('base_', '').replace('vip_', '');
+    const val = values[0];
+    const isVip = val.startsWith('vip_');
+    const taglio = val.replace('base_', '').replace('vip_', '');
     const tipo = isVip ? '⭐ VIP' : '🟢 BASE';
     const orario = getOraItaliana();
 
-    // 1. Risposta PRIVATA per il dipendente che ha registrato la vendita
-    const embedPrivato = new EmbedBuilder()
-      .setColor(isVip ? '#eab308' : '#10b981')
-      .setTitle('✅ Fattura Registrata')
-      .setDescription(
-        `Hai registrato con successo una vendita **${tipo}** per il pacchetto **${taglio}**.\n` +
-        `🕒 Orario: **${orario}**`
-      )
-      .setTimestamp();
+    // 1. Messaggio di conferma temporaneo / privato per chi registra
+    await interaction.reply({ 
+      content: `✅ Registrata vendita **${tipo}** per il pacchetto **${taglio}**! La fattura è stata inviata su #gestione-fatture.`, 
+      flags: 64 
+    });
 
-    await interaction.reply({ embeds: [embedPrivato], flags: 64 });
-
-    // 2. Invio del log nel canale riservato #gestione-fatture
+    // 2. Invio del report visibile a tutti nel canale #gestione-fatture
     if (canaleFatture) {
       const embedLog = new EmbedBuilder()
         .setColor(isVip ? '#eab308' : '#10b981')
-        .setTitle('🧾 Nuova Fattura Registrata')
+        .setTitle('🧾 Nuova Vendita Registrata')
+        .setDescription(`**${user.username}** ha registrato una vendita!`)
         .addFields(
-          { name: '👤 Dipendente', value: `${user} (${user.username})`, inline: true },
+          { name: '👤 Dipendente', value: `${user}`, inline: true },
           { name: '📦 Pacchetto Venduto', value: `**${taglio}**`, inline: true },
-          { name: '🏷️ Tipo Cliente', value: `**${tipo}**`, inline: true },
+          { name: '🏷️ Categoria', value: `**${tipo}**`, inline: true },
           { name: '🕒 Orario (IT)', value: `**${orario}**`, inline: true }
         )
+        .setFooter({ text: 'Paddock Pub - Gestione Incassi' })
         .setTimestamp();
 
       await canaleFatture.send({ embeds: [embedLog] });
