@@ -1,8 +1,9 @@
+
 import { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits } from 'discord.js';
 
 export default {
   data: new SlashCommandBuilder()
-    .setName('pannello-cartellino')
+    .setName('cartellino')
     .setDescription('Invia il pannello per il cartellino di servizio')
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
@@ -12,7 +13,8 @@ export default {
       .setAuthor({ name: 'Sistema Cartellino | Il Tuo Locale' })
       .setTitle('💳 Sistema Cartellino Dipendenti')
       .setDescription(
-        'Benvenuto nel **sistema cartellini**!\nQui sotto troverai i pulsanti per gestire il tuo turno di servizio.\n\n' +
+        'Benvenuto nel **sistema cartellini**!\n' +
+        'Qui sotto troverai i pulsanti per gestire il tuo turno di servizio.\n\n' +
         '🟢 **Timbra** ➔ Inizia il turno di servizio registrando l\'orario.\n' +
         '🔴 **Stimbra** ➔ Termina il turno e registra le ore svolte.\n' +
         '🟡 **Pausa** ➔ Metti in pausa il turno (o riclicca per rientrare).\n' +
@@ -34,13 +36,12 @@ export default {
 };
 Clicca su Commit changes.
 
-2. Sostituisci il codice dei pulsanti su src/app.js (o dove risiede l'handler)
+2. Codice per src/app.js
 
-Nel log si vede che il file principale di TitanBot è src/app.js (e non index.js).
-
-Apri src/app.js su GitHub e incolla questa logica in fondo al file (o prima che il bot si colleghi):
+Apri src/app.js su GitHub, premi la matita, scorri fino in fondo a tutto il file e incolla questo blocco alla fine:
 
 JavaScript
+/* Gestione pulsanti cartellino */
 client.on('interactionCreate', async interaction => {
   if (!interaction.isButton()) return;
 
@@ -59,6 +60,6 @@ client.on('interactionCreate', async interaction => {
     await interaction.reply({ content: `📊 Sezione informazioni orario.`, flags: 64 });
   }
   else if (customId === 'btn_inservizio') {
-    await interaction.reply({ content: `👥 **Persone in servizio:** da configurare con database.`, flags: 64 });
+    await interaction.reply({ content: `👥 **Persone in servizio:** funzione da collegare al DB.`, flags: 64 });
   }
 });
