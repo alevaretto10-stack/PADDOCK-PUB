@@ -3,7 +3,7 @@ import { EmbedBuilder } from 'discord.js';
 export const turniAttivi = new Map();
 export const oreTotaliAccumulate = new Map();
 
-// Funzione per formattare l'orario sempre in fuso orario italiano
+// Funzione helper per l'orario italiano esatto (Europe/Rome)
 function getOraItaliana(data = new Date()) {
   return data.toLocaleTimeString('it-IT', { 
     timeZone: 'Europe/Rome', 
@@ -22,6 +22,8 @@ export default {
 
     const userId = user.id;
     const oraAttuale = new Date();
+    
+    // Canale per i log della dirigenza
     const canaleLog = guild?.channels.cache.find(c => c.name === 'timbratura-dipendenti');
 
     // 🟢 AZIONE: TIMBRA
@@ -33,6 +35,7 @@ export default {
       turniAttivi.set(userId, { oraInizio: oraAttuale, username: user.username });
       const orarioFormattato = getOraItaliana(oraAttuale);
 
+      // 1. Messaggio PRIVATO per l'utente (Solo tu puoi vederlo)
       const embedPrivato = new EmbedBuilder()
         .setColor('#22c55e')
         .setTitle('🟢 Entrata in Servizio')
@@ -41,6 +44,7 @@ export default {
 
       await interaction.reply({ embeds: [embedPrivato], flags: 64 });
 
+      // 2. Messaggio PUBBLICO inviato nel canale dirigenza #timbratura-dipendenti
       if (canaleLog) {
         const embedLog = new EmbedBuilder()
           .setColor('#22c55e')
@@ -71,6 +75,7 @@ export default {
 
       const orarioUscita = getOraItaliana(oraAttuale);
 
+      // 1. Messaggio PRIVATO per l'utente (Solo tu puoi vederlo)
       const embedPrivato = new EmbedBuilder()
         .setColor('#ef4444')
         .setTitle('🔴 Uscita dal Servizio')
@@ -83,6 +88,7 @@ export default {
 
       await interaction.reply({ embeds: [embedPrivato], flags: 64 });
 
+      // 2. Messaggio PUBBLICO inviato nel canale dirigenza #timbratura-dipendenti
       if (canaleLog) {
         const embedLog = new EmbedBuilder()
           .setColor('#ef4444')
