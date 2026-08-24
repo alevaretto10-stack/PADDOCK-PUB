@@ -1,7 +1,10 @@
 import { EmbedBuilder } from 'discord.js';
 
-// Mappa temporanea in memoria per memorizzare l'orario di inizio del turno
+// Mappa per i turni in corso
 const turniAttivi = new Map();
+
+// Mappa per il totale dei minuti accumulati da ciascun utente
+const oreTotaliAccumulate = new Map();
 
 export default {
   name: 'interactionCreate',
@@ -9,7 +12,7 @@ export default {
     if (!interaction.isButton()) return;
 
     const { customId, user, channel } = interaction;
-    if (!['btn_timbra', 'btn_stimbra', 'btn_info'].includes(customId)) return;
+    if (!['btn_timbra', 'btn_stimbra', 'btn_info', 'btn_inservizio'].includes(customId)) return;
 
     const userId = user.id;
     const oraAttuale = new Date();
@@ -20,7 +23,7 @@ export default {
         return await interaction.reply({ content: `⚠️ **${user.username}**, sei già in servizio!`, flags: 64 });
       }
 
-      turniAttivi.set(userId, oraAttuale);
+      turniAttivi.set(userId, { oraInizio: oraAttuale, username: user.username });
       const orarioFormattato = oraAttuale.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
 
       const embedTimbra = new EmbedBuilder()
@@ -39,14 +42,18 @@ export default {
         return await interaction.reply({ content: `⚠️ **${user.username}**, non sei attualmente in servizio!`, flags: 64 });
       }
 
-      const orarioInizio = turniAttivi.get(userId);
+      const datiTurno = turniAttivi.get(userId);
       turniAttivi.delete(userId);
 
-      // Calcolo della durata del turno
-      const differenzaMs = oraAttuale - orarioInizio;
-      const minutiLavorati = Math.floor(differenzaMs / (1000 * 60));
-      const oreLavorate = Math.floor(minutiLavorati / 60);
-      const minutiRimanenti = minutiLavorati % 60;
+      // Calcolo minuti svolti nel turno attuale
+      const minutiLavorati = Math.floor((oraAttuale - datiTurno.oraInizio) / (1000 * 60));
+      const oreTurno = Math.floor(minutiLavorati / 60);
+      const minutiTurno = minutiLavorati % 60;
+
+      // Aggiornamento storico totale
+      const minutiPrecedenti = oreTotaliAccumulate.get(userId) || 0;
+      const nuoviMinutiTotali = minutiPrecedenti + minutiLavorati;
+      oreTotaliAccumulate.set(userId, nuoviMinutiTotali);
 
       const orarioUscita = oraAttuale.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
 
@@ -54,8 +61,9 @@ export default {
         .setColor('#ef4444')
         .setTitle('🔴 Uscita dal Servizio')
         .setDescription(
-          `**${user.username}** ha stimbrato alle **${orarioUscita}** ed è uscito dal servizio.\n\n` +
-          `⏱️ **Tempo Totale Turno:** ${oreLavorate}h ${minutiRimanenti}m (${minutiLavorati} minuti totali).`
+          `**${user.username}** ha stimbrato alle **${orarioUscita}**.\n\n` +
+          `⏱️ **Turno svolto:** ${oreTurno}h ${minutiTurno}m\n` +
+          `📊 **Totale cumulato:** ${Math.floor(nuoviMinutiTotali / 60)}h ${nuoviMinutiTotali % 60}m`
         )
         .setTimestamp();
 
@@ -63,20 +71,40 @@ export default {
       await channel.send({ embeds: [embedStimbra] });
     }
 
-    // 🔵 AZIONE: INFO
+    // 🔵 AZIONE: INFO (Mostra lo storico totale dell'utente)
     else if (customId === 'btn_info') {
-      if (!turniAttivi.has(userId)) {
-        return await interaction.reply({ content: `ℹ️ **${user.username}**, al momento non sei in servizio.`, flags: 64 });
+      const minutiTotali = oreTotaliAccumulate.get(userId) || 0;
+      const ore = Math.floor(minutiTotali / 60);
+      const minuti = minutiTotali % 60;
+
+      let messaggio = `📊 **Storico Ore - ${user.username}**\n\n` +
+                      `⏱️ **Ore totali accumulate:** ${ore}h ${minuti}m (${minutiTotali} minuti totali).`;
+
+      if (turniAttivi.has(userId)) {
+        const oraInizio = turniAttivi.get(userId).oraInizio;
+        const minutiAttuali = Math.floor((oraAttuale - oraInizio) / (1000 * 60));
+        messaggio += `\n🟢 *Attualmente in servizio da ${minutiAttuali} minuti.*`;
+      } else {
+        messaggio += `\n🔴 *Al momento non sei in servizio.*`;
       }
 
-      const orarioInizio = turniAttivi.get(userId);
-      const orarioInizioStr = orarioInizio.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
-      const minutiInCorso = Math.floor((oraAttuale - orarioInizio) / (1000 * 60));
+      await interaction.reply({ content: messaggio, flags: 64 });
+    }
 
-      await interaction.reply({
-        content: `ℹ️ **${user.username}**, sei in servizio dalle **${orarioInizioStr}** (in turno da **${minutiInCorso} minuti**).`,
-        flags: 64
-      });
+    // 👥 AZIONE: IN SERVIZIO (Elenco utenti attualmente in turno)
+    else if (customId === 'btn_inservizio') {
+      if (turniAttivi.size === 0) {
+        return await interaction.reply({ content: '👥 **Nessun dipendente è attualmente in servizio.**', flags: 64 });
+      }
+
+      let lista = '👥 **Dipendenti attualmente in servizio:**\n\n';
+      for (const [id, dati] of turniAttivi.entries()) {
+        const minutiTurno = Math.floor((oraAttuale - dati.oraInizio) / (1000 * 60));
+        const orarioInizioStr = dati.oraInizio.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+        lista += `• **${dati.username}** (Dalle **${orarioInizioStr}** — da ${minutiTurno} min)\n`;
+      }
+
+      await interaction.reply({ content: lista, flags: 64 });
     }
   },
 };
