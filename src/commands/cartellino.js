@@ -1,14 +1,12 @@
+import { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits } from 'discord.js';
 
-const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits } = require('discord.js');
-
-module.exports = {
+export default {
   data: new SlashCommandBuilder()
     .setName('pannello-cartellino')
     .setDescription('Invia il pannello per il cartellino di servizio')
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator), // Solo gli admin possono crearlo
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
   async execute(interaction) {
-    // 1. Creazione dell'Embed (Grafica del messaggio)
     const embed = new EmbedBuilder()
       .setColor('#3b82f6')
       .setAuthor({ name: 'Sistema Cartellino | Il Tuo Locale' })
@@ -21,37 +19,46 @@ module.exports = {
         '🔵 **Info** ➔ Controlla lo storico delle tue ore accumulate.\n' +
         '👥 **In Servizio** ➔ Visualizza chi è attualmente timbrato.'
       )
-      .setThumbnail(interaction.guild.iconURL({ dynamic: true }))
       .setFooter({ text: 'Sistema Gestione Orari - Staff' });
 
-    // 2. Creazione dei Pulsanti
     const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId('btn_timbra')
-        .setLabel('Timbra')
-        .setStyle(ButtonStyle.Success), // Verde
-
-      new ButtonBuilder()
-        .setCustomId('btn_stimbra')
-        .setLabel('Stimbra')
-        .setStyle(ButtonStyle.Danger), // Rosso
-
-      new ButtonBuilder()
-        .setCustomId('btn_pausa')
-        .setLabel('Pausa')
-        .setStyle(ButtonStyle.Secondary), // Grigio
-
-      new ButtonBuilder()
-        .setCustomId('btn_info')
-        .setLabel('Info')
-        .setStyle(ButtonStyle.Primary), // Blu
-
-      new ButtonBuilder()
-        .setCustomId('btn_inservizio')
-        .setLabel('In Servizio')
-        .setStyle(ButtonStyle.Primary) // Blu
+      new ButtonBuilder().setCustomId('btn_timbra').setLabel('Timbra').setStyle(ButtonStyle.Success),
+      new ButtonBuilder().setCustomId('btn_stimbra').setLabel('Stimbra').setStyle(ButtonStyle.Danger),
+      new ButtonBuilder().setCustomId('btn_pausa').setLabel('Pausa').setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder().setCustomId('btn_info').setLabel('Info').setStyle(ButtonStyle.Primary),
+      new ButtonBuilder().setCustomId('btn_inservizio').setLabel('In Servizio').setStyle(ButtonStyle.Primary)
     );
 
     await interaction.reply({ embeds: [embed], components: [row] });
   },
 };
+Clicca su Commit changes.
+
+2. Sostituisci il codice dei pulsanti su src/app.js (o dove risiede l'handler)
+
+Nel log si vede che il file principale di TitanBot è src/app.js (e non index.js).
+
+Apri src/app.js su GitHub e incolla questa logica in fondo al file (o prima che il bot si colleghi):
+
+JavaScript
+client.on('interactionCreate', async interaction => {
+  if (!interaction.isButton()) return;
+
+  const { customId, user } = interaction;
+
+  if (customId === 'btn_timbra') {
+    await interaction.reply({ content: `✅ **${user.username}**, hai timbrato il cartellino! Buon lavoro.`, flags: 64 });
+  } 
+  else if (customId === 'btn_stimbra') {
+    await interaction.reply({ content: `🔴 **${user.username}**, hai stimbrato. Turno terminato!`, flags: 64 });
+  }
+  else if (customId === 'btn_pausa') {
+    await interaction.reply({ content: `🟡 Stato pausa aggiornato per **${user.username}**.`, flags: 64 });
+  }
+  else if (customId === 'btn_info') {
+    await interaction.reply({ content: `📊 Sezione informazioni orario.`, flags: 64 });
+  }
+  else if (customId === 'btn_inservizio') {
+    await interaction.reply({ content: `👥 **Persone in servizio:** da configurare con database.`, flags: 64 });
+  }
+});
