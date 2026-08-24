@@ -2,7 +2,7 @@ import { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, StringSelectMenuBu
 
 export default {
   data: new SlashCommandBuilder()
-    .setName('fattura')
+    .setName('fatture')
     .setDescription('Invia il pannello per registrare le fatture di vendita')
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
@@ -12,9 +12,9 @@ export default {
       .setAuthor({ name: 'Sistema Fatture | Paddock Pub' })
       .setTitle('🧾 Registrazione Vendite & Fatture')
       .setDescription(
-        'Seleziona dal menu a tendina il pacchetto venduto per registrarlo automaticamente.\n\n' +
-        '🟢 **Menu BASE:** Per i clienti standard.\n' +
-        '⭐ **Menu VIP:** Per i clienti VIP.'
+        'Seleziona dal menu a tendina il pacchetto venduto per registrarlo.\n\n' +
+        '🟢 **Menu BASE:** Vendite standard (prezzo base).\n' +
+        '⭐ **Menu VIP:** Vendite VIP (prezzo maggiorato).'
       )
       .setFooter({ text: 'Paddock Pub - Gestione Incassi' });
 
@@ -32,21 +32,15 @@ export default {
       { label: '500x500 (500 Cibo + 500 Acqua)', value: '500x500' },
     ];
 
-    // Menu a tendina BASE
     const selectBase = new StringSelectMenuBuilder()
       .setCustomId('select_fattura_base')
       .setPlaceholder('🟢 Seleziona vendita BASE...')
-      .addOptions(
-        opzioni.map(o => new StringSelectMenuOptionBuilder().setLabel(`BASE - ${o.label}`).setValue(`base_${o.value}`))
-      );
+      .addOptions(opzioni.map(o => new StringSelectMenuOptionBuilder().setLabel(`BASE - ${o.label}`).setValue(`base_${o.value}`)));
 
-    // Menu a tendina VIP
     const selectVip = new StringSelectMenuBuilder()
       .setCustomId('select_fattura_vip')
       .setPlaceholder('⭐ Seleziona vendita VIP...')
-      .addOptions(
-        opzioni.map(o => new StringSelectMenuOptionBuilder().setLabel(`VIP - ${o.label}`).setValue(`vip_${o.value}`))
-      );
+      .addOptions(opzioni.map(o => new StringSelectMenuOptionBuilder().setLabel(`VIP - ${o.label}`).setValue(`vip_${o.value}`)));
 
     const rowBase = new ActionRowBuilder().addComponents(selectBase);
     const rowVip = new ActionRowBuilder().addComponents(selectVip);
