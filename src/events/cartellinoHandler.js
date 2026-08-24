@@ -1,6 +1,5 @@
 import { EmbedBuilder } from 'discord.js';
 
-// Mappe esportate per permettere la lettura dal comando admin
 export const turniAttivi = new Map();
 export const oreTotaliAccumulate = new Map();
 
@@ -9,7 +8,7 @@ export default {
   async execute(interaction) {
     if (!interaction.isButton()) return;
 
-    const { customId, user, channel } = interaction;
+    const { customId, user } = interaction;
     if (!['btn_timbra', 'btn_stimbra', 'btn_info', 'btn_inservizio'].includes(customId)) return;
 
     const userId = user.id;
@@ -27,11 +26,11 @@ export default {
       const embedTimbra = new EmbedBuilder()
         .setColor('#22c55e')
         .setTitle('🟢 Entrata in Servizio')
-        .setDescription(`**${user.username}** ha timbrato il cartellino alle **${orarioFormattato}**.\n*Il conteggio delle ore è iniziato.*`)
+        .setDescription(`Hai timbrato il cartellino alle **${orarioFormattato}**.\n*Il conteggio delle ore è iniziato.*`)
         .setTimestamp();
 
-      await interaction.reply({ content: '✅ Timbratura registrata con successo!', flags: 64 });
-      await channel.send({ embeds: [embedTimbra] });
+      // Risposta visibile SOLO a chi clicca
+      await interaction.reply({ embeds: [embedTimbra], flags: 64 });
     }
 
     // 🔴 AZIONE: STIMBRA
@@ -57,13 +56,14 @@ export default {
         .setColor('#ef4444')
         .setTitle('🔴 Uscita dal Servizio')
         .setDescription(
-          `**${user.username}** ha stimbrato alle **${orarioUscita}**.\n\n` +
-          `⏱️ **Turno svolto:** ${oreTurno}h ${minutiTurno}m`
+          `Hai stimbrato alle **${orarioUscita}**.\n\n` +
+          `⏱️ **Turno svolto:** ${oreTurno}h ${minutiTurno}m\n` +
+          `📊 **Totale cumulato:** ${Math.floor(nuoviMinutiTotali / 60)}h ${nuoviMinutiTotali % 60}m`
         )
         .setTimestamp();
 
-      await interaction.reply({ content: '✅ Stimbratura registrata!', flags: 64 });
-      await channel.send({ embeds: [embedStimbra] });
+      // Risposta visibile SOLO a chi clicca
+      await interaction.reply({ embeds: [embedStimbra], flags: 64 });
     }
 
     // 🔵 AZIONE: INFO (PRIVATO)
@@ -82,7 +82,6 @@ export default {
         messaggio += `\n🔴 *Al momento non sei in servizio.*`;
       }
 
-      // Risposta privata visible SOLO all'utente che preme il tasto
       await interaction.reply({ content: messaggio, flags: 64 });
     }
 
@@ -99,7 +98,6 @@ export default {
         lista += `• **${dati.username}** (Dalle **${orarioInizioStr}** — da ${minutiTurno} min)\n`;
       }
 
-      // Risposta privata visible SOLO all'utente che preme il tasto
       await interaction.reply({ content: lista, flags: 64 });
     }
   },
