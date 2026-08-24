@@ -3,31 +3,30 @@ import { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, But
 export default {
   data: new SlashCommandBuilder()
     .setName('cartellino')
-    .setDescription('Pannello di gestione cartellino e fatturato dipendente'),
+    .setDescription('Invia il tuo pannello personale per il cartellino di servizio'),
 
   async execute(interaction) {
     const embed = new EmbedBuilder()
       .setColor('#3b82f6')
-      .setAuthor({ name: 'Sistema Gestionale | Paddock Pub' })
-      .setTitle('💳 Cartellino & Fatturazione')
+      .setAuthor({ name: 'Sistema Cartellino | Paddock Pub' })
+      .setTitle('💳 Cartellino Personale Dipendente')
       .setDescription(
-        'Benvenuto nel pannello di gestione.\n\n' +
-        '🟢 **Timbra** ➔ Inizia il tuo turno.\n' +
-        '🔴 **Stimbra** ➔ Termina il turno.\n' +
-        '🧾 **Fattura** ➔ Apri il menu per registrare una vendita.\n' +
-        '🔵 **Info** ➔ Controlla le tue ore.\n' +
-        '👥 **In Servizio** ➔ Chi è attualmente in turno.'
+        'Questo è il tuo pannello di gestione del turno.\n\n' +
+        '🟢 **Timbra** ➔ Inizia il tuo turno di servizio.\n' +
+        '🔴 **Stimbra** ➔ Termina il tuo turno e salva le ore.\n' +
+        '🔵 **Info** ➔ Controlla le tue ore accumulate.\n' +
+        '👥 **In Servizio** ➔ Visualizza chi è in turno.'
       )
-      .setFooter({ text: 'Paddock Pub - Visibile solo a te' });
+      .setFooter({ text: 'Sistema Gestione Orari - Visibile solo a te' });
 
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId('btn_timbra').setLabel('Timbra').setStyle(ButtonStyle.Success),
       new ButtonBuilder().setCustomId('btn_stimbra').setLabel('Stimbra').setStyle(ButtonStyle.Danger),
-      new ButtonBuilder().setCustomId('btn_fattura').setLabel('Fattura').setStyle(ButtonStyle.Success),
       new ButtonBuilder().setCustomId('btn_info').setLabel('Info').setStyle(ButtonStyle.Primary),
       new ButtonBuilder().setCustomId('btn_inservizio').setLabel('In Servizio').setStyle(ButtonStyle.Secondary)
     );
 
+    // flags: 64 rende l'intero messaggio visibile SOLO alla persona che ha digitato /cartellino
     await interaction.reply({ embeds: [embed], components: [row], flags: 64 });
   },
 };
