@@ -12,13 +12,13 @@ export default {
       .setAuthor({ name: 'Sistema Cartellino | Paddock Pub' })
       .setTitle('💳 Cartellino Dipendenti')
       .setDescription(
-        'Clicca sui pulsanti in basso per gestire il tuo turno di servizio.\n\n' +
+        'Benvenuto nel sistema cartellini!\n\n' +
         '🟢 **Timbra** ➔ Inizia il turno di servizio.\n' +
         '🔴 **Stimbra** ➔ Termina il turno e salva le ore svolte.\n' +
-        '🔵 **Info** ➔ Controlla le tue ore totali accumulate.\n' +
-        '👥 **In Servizio** ➔ Visualizza chi è attualmente timbrato.'
+        '🔵 **Info** ➔ Controlla le tue ore accumulate (Privato).\n' +
+        '👥 **In Servizio** ➔ Visualizza chi è in turno (Privato).'
       )
-      .setFooter({ text: 'Sistema Gestione Orari' });
+      .setFooter({ text: 'Sistema Gestione Orari - Staff' });
 
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId('btn_timbra').setLabel('Timbra').setStyle(ButtonStyle.Success),
