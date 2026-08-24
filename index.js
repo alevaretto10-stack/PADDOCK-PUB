@@ -124,3 +124,27 @@ client.on('interactionCreate', async (interaction) => {
 });
 
 client.login(process.env.DISCORD_TOKEN);
+
+client.on('interactionCreate', async interaction => {
+  if (!interaction.isButton()) return;
+
+  const { customId, user } = interaction;
+
+  if (customId === 'btn_timbra') {
+    // Salva l'ora di inizio su Database (es. Quick.db o MongoDB)
+    await interaction.reply({ content: `✅ **${user.username}**, hai timbrato il cartellino! Buon lavoro.`, ephemeral: true });
+  } 
+  else if (customId === 'btn_stimbra') {
+    // Calcola la differenza oraria e azzera il turno attivo
+    await interaction.reply({ content: `🔴 **${user.username}**, hai stimbrato. Turno terminato!`, ephemeral: true });
+  }
+  else if (customId === 'btn_pausa') {
+    await interaction.reply({ content: `🟡 Stato pausa aggiornato.`, ephemeral: true });
+  }
+  else if (customId === 'btn_info') {
+    await interaction.reply({ content: `📊 Hai accumulato X ore questa settimana.`, ephemeral: true });
+  }
+  else if (customId === 'btn_inservizio') {
+    await interaction.reply({ content: `👥 **Membri attualmente in servizio:** ...`, ephemeral: true });
+  }
+});
