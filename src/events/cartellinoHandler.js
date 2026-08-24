@@ -1,10 +1,8 @@
 import { EmbedBuilder } from 'discord.js';
 
-// Mappa per i turni in corso
-const turniAttivi = new Map();
-
-// Mappa per il totale dei minuti accumulati da ciascun utente
-const oreTotaliAccumulate = new Map();
+// Mappe esportate per permettere la lettura dal comando admin
+export const turniAttivi = new Map();
+export const oreTotaliAccumulate = new Map();
 
 export default {
   name: 'interactionCreate',
@@ -32,7 +30,7 @@ export default {
         .setDescription(`**${user.username}** ha timbrato il cartellino alle **${orarioFormattato}**.\n*Il conteggio delle ore è iniziato.*`)
         .setTimestamp();
 
-      await interaction.reply({ content: '✅ Timbratura registrata!', flags: 64 });
+      await interaction.reply({ content: '✅ Timbratura registrata con successo!', flags: 64 });
       await channel.send({ embeds: [embedTimbra] });
     }
 
@@ -45,12 +43,10 @@ export default {
       const datiTurno = turniAttivi.get(userId);
       turniAttivi.delete(userId);
 
-      // Calcolo minuti svolti nel turno attuale
       const minutiLavorati = Math.floor((oraAttuale - datiTurno.oraInizio) / (1000 * 60));
       const oreTurno = Math.floor(minutiLavorati / 60);
       const minutiTurno = minutiLavorati % 60;
 
-      // Aggiornamento storico totale
       const minutiPrecedenti = oreTotaliAccumulate.get(userId) || 0;
       const nuoviMinutiTotali = minutiPrecedenti + minutiLavorati;
       oreTotaliAccumulate.set(userId, nuoviMinutiTotali);
@@ -62,8 +58,7 @@ export default {
         .setTitle('🔴 Uscita dal Servizio')
         .setDescription(
           `**${user.username}** ha stimbrato alle **${orarioUscita}**.\n\n` +
-          `⏱️ **Turno svolto:** ${oreTurno}h ${minutiTurno}m\n` +
-          `📊 **Totale cumulato:** ${Math.floor(nuoviMinutiTotali / 60)}h ${nuoviMinutiTotali % 60}m`
+          `⏱️ **Turno svolto:** ${oreTurno}h ${minutiTurno}m`
         )
         .setTimestamp();
 
@@ -71,27 +66,27 @@ export default {
       await channel.send({ embeds: [embedStimbra] });
     }
 
-    // 🔵 AZIONE: INFO (Mostra lo storico totale dell'utente)
+    // 🔵 AZIONE: INFO (PRIVATO)
     else if (customId === 'btn_info') {
       const minutiTotali = oreTotaliAccumulate.get(userId) || 0;
       const ore = Math.floor(minutiTotali / 60);
       const minuti = minutiTotali % 60;
 
-      let messaggio = `📊 **Storico Ore - ${user.username}**\n\n` +
-                      `⏱️ **Ore totali accumulate:** ${ore}h ${minuti}m (${minutiTotali} minuti totali).`;
+      let messaggio = `📊 **Il tuo storico ore accumulate:** ${ore}h ${minuti}m (${minutiTotali} min totali).`;
 
       if (turniAttivi.has(userId)) {
         const oraInizio = turniAttivi.get(userId).oraInizio;
         const minutiAttuali = Math.floor((oraAttuale - oraInizio) / (1000 * 60));
-        messaggio += `\n🟢 *Attualmente in servizio da ${minutiAttuali} minuti.*`;
+        messaggio += `\n🟢 *Sei attualmente in turno da ${minutiAttuali} minuti.*`;
       } else {
         messaggio += `\n🔴 *Al momento non sei in servizio.*`;
       }
 
+      // Risposta privata visible SOLO all'utente che preme il tasto
       await interaction.reply({ content: messaggio, flags: 64 });
     }
 
-    // 👥 AZIONE: IN SERVIZIO (Elenco utenti attualmente in turno)
+    // 👥 AZIONE: IN SERVIZIO (PRIVATO)
     else if (customId === 'btn_inservizio') {
       if (turniAttivi.size === 0) {
         return await interaction.reply({ content: '👥 **Nessun dipendente è attualmente in servizio.**', flags: 64 });
@@ -104,6 +99,7 @@ export default {
         lista += `• **${dati.username}** (Dalle **${orarioInizioStr}** — da ${minutiTurno} min)\n`;
       }
 
+      // Risposta privata visible SOLO all'utente che preme il tasto
       await interaction.reply({ content: lista, flags: 64 });
     }
   },
