@@ -3,6 +3,15 @@ import { EmbedBuilder } from 'discord.js';
 export const turniAttivi = new Map();
 export const oreTotaliAccumulate = new Map();
 
+// Funzione per formattare l'orario sempre in fuso orario italiano
+function getOraItaliana(data = new Date()) {
+  return data.toLocaleTimeString('it-IT', { 
+    timeZone: 'Europe/Rome', 
+    hour: '2-digit', 
+    minute: '2-digit' 
+  });
+}
+
 export default {
   name: 'interactionCreate',
   async execute(interaction) {
@@ -13,8 +22,6 @@ export default {
 
     const userId = user.id;
     const oraAttuale = new Date();
-
-    // Cerca il canale per i log della dirigenza
     const canaleLog = guild?.channels.cache.find(c => c.name === 'timbratura-dipendenti');
 
     // 🟢 AZIONE: TIMBRA
@@ -24,9 +31,8 @@ export default {
       }
 
       turniAttivi.set(userId, { oraInizio: oraAttuale, username: user.username });
-      const orarioFormattato = oraAttuale.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+      const orarioFormattato = getOraItaliana(oraAttuale);
 
-      // Embed PRIVATO per l'utente
       const embedPrivato = new EmbedBuilder()
         .setColor('#22c55e')
         .setTitle('🟢 Entrata in Servizio')
@@ -35,7 +41,6 @@ export default {
 
       await interaction.reply({ embeds: [embedPrivato], flags: 64 });
 
-      // Embed PUBBLICO per il canale log dirigenza
       if (canaleLog) {
         const embedLog = new EmbedBuilder()
           .setColor('#22c55e')
@@ -64,9 +69,8 @@ export default {
       const nuoviMinutiTotali = minutiPrecedenti + minutiLavorati;
       oreTotaliAccumulate.set(userId, nuoviMinutiTotali);
 
-      const orarioUscita = oraAttuale.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+      const orarioUscita = getOraItaliana(oraAttuale);
 
-      // Embed PRIVATO per l'utente
       const embedPrivato = new EmbedBuilder()
         .setColor('#ef4444')
         .setTitle('🔴 Uscita dal Servizio')
@@ -79,7 +83,6 @@ export default {
 
       await interaction.reply({ embeds: [embedPrivato], flags: 64 });
 
-      // Embed PUBBLICO per il canale log dirigenza
       if (canaleLog) {
         const embedLog = new EmbedBuilder()
           .setColor('#ef4444')
@@ -124,7 +127,7 @@ export default {
       let lista = '👥 **Dipendenti attualmente in servizio:**\n\n';
       for (const [id, dati] of turniAttivi.entries()) {
         const minutiTurno = Math.floor((oraAttuale - dati.oraInizio) / (1000 * 60));
-        const orarioInizioStr = dati.oraInizio.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+        const orarioInizioStr = getOraItaliana(dati.oraInizio);
         lista += `• **${dati.username}** (Dalle **${orarioInizioStr}** — da ${minutiTurno} min)\n`;
       }
 
