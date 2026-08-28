@@ -10,44 +10,22 @@ function initDB() {
       fs.mkdirSync(DB_DIR, { recursive: true });
     }
     if (!fs.existsSync(DB_PATH)) {
-      fs.writeFileSync(DB_PATH, JSON.stringify({ settimanaInizio: getInizioSettimanaCorrente(), vendite: [] }, null, 2));
+      fs.writeFileSync(DB_PATH, JSON.stringify({ vendite: [] }, null, 2));
     }
   } catch (err) {
     console.error('Errore inizializzazione DB:', err);
   }
 }
 
-export function getInizioSettimanaCorrente() {
-  const ora = new Date();
-  const giorno = ora.getDay(); // 0 = Dom, 6 = Sab
-  const giorniDaSabato = (giorno + 1) % 7; 
-
-  const inizio = new Date(ora);
-  inizio.setDate(ora.getDate() - giorniDaSabato);
-  inizio.setHours(0, 0, 0, 0);
-
-  return inizio.getTime();
-}
-
 function leggiDati() {
   initDB();
   try {
-    if (!fs.existsSync(DB_PATH)) {
-      return { settimanaInizio: getInizioSettimanaCorrente(), vendite: [] };
-    }
+    if (!fs.existsSync(DB_PATH)) return { vendite: [] };
     const data = fs.readFileSync(DB_PATH, 'utf-8');
-    let json = JSON.parse(data);
-
-    const inizioAttuale = getInizioSettimanaCorrente();
-    if (!json.settimanaInizio || json.settimanaInizio < inizioAttuale) {
-      json = { settimanaInizio: inizioAttuale, vendite: [] };
-      salvaDati(json);
-    }
-
-    return json;
+    return JSON.parse(data);
   } catch (err) {
     console.error('Errore lettura DB vendite:', err);
-    return { settimanaInizio: getInizioSettimanaCorrente(), vendite: [] };
+    return { vendite: [] };
   }
 }
 
@@ -60,6 +38,7 @@ function salvaDati(dati) {
   }
 }
 
+// Salva ogni vendita con il timestamp preciso
 export function registraVendita(userId, username, importo) {
   const dati = leggiDati();
   dati.vendite.push({
@@ -71,36 +50,37 @@ export function registraVendita(userId, username, importo) {
   salvaDati(dati);
 }
 
-export function getResocontoSettimanale() {
+// Calcola i totali filtrate per un intervallo di tempo (in millisecondi)
+export function getResocontoFiltrato(inizioMs, fineMs) {
   const dati = leggiDati();
   const dipendenti = {};
   let totaleAzienda = 0;
 
   if (Array.isArray(dati.vendite)) {
     dati.vendite.forEach(v => {
-      totaleAzienda += v.importo;
-      if (!dipendenti[v.userId]) {
-        dipendenti[v.userId] = {
-          username: v.username,
-          totale: 0,
-          numeroVendite: 0
-        };
+      // Controlla se la vendita rientra nel periodo richiesto
+      if (v.timestamp >= inizioMs && v.timestamp <= fineMs) {
+        totaleAzienda += v.importo;
+        if (!dipendenti[v.userId]) {
+          dipendenti[v.userId] = {
+            username: v.username,
+            totale: 0,
+            numeroVendite: 0
+          };
+        }
+        dipendenti[v.userId].totale += v.importo;
+        dipendenti[v.userId].numeroVendite += 1;
       }
-      dipendenti[v.userId].totale += v.importo;
-      dipendenti[v.userId].numeroVendite += 1;
     });
   }
 
   return {
     totaleAzienda,
-    dipendenti: Object.values(dipendenti).sort((a, b) => b.totale - a.totale),
-    settimanaInizio: dati.settimanaInizio
+    dipendenti: Object.values(dipendenti).sort((a, b) => b.totale - a.totale)
   };
 }
 
+// Reset manuale: svuota tutte le vendite registrate
 export function resetSettimanaManuale() {
-  salvaDati({
-    settimanaInizio: getInizioSettimanaCorrente(),
-    vendite: []
-  });
+  salvaDati({ vendite: [] });
 }
