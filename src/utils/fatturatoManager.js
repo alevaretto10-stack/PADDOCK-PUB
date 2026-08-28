@@ -1,25 +1,25 @@
 import fs from 'fs';
 import path from 'path';
 
-const DB_PATH = path.resolve('./data/vendite.json');
+const DB_DIR = path.resolve('./data');
+const DB_PATH = path.join(DB_DIR, 'vendite.json');
 
-// Assicura che la cartella data/ e il file JSON esistano
 function initDB() {
-  const dir = path.dirname(DB_PATH);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-  if (!fs.existsSync(DB_PATH)) {
-    fs.writeFileSync(DB_PATH, JSON.stringify({ settimanaInizio: getInizioSettimanaCorrente(), vendite: [] }, null, 2));
+  try {
+    if (!fs.existsSync(DB_DIR)) {
+      fs.mkdirSync(DB_DIR, { recursive: true });
+    }
+    if (!fs.existsSync(DB_PATH)) {
+      fs.writeFileSync(DB_PATH, JSON.stringify({ settimanaInizio: getInizioSettimanaCorrente(), vendite: [] }, null, 2));
+    }
+  } catch (err) {
+    console.error('Errore inizializzazione DB:', err);
   }
 }
 
-// Trova il timestamp del Sabato ore 00:00 precedente/corrente
 export function getInizioSettimanaCorrente() {
   const ora = new Date();
-  const giorno = ora.getDay(); // 0 = Domenica, 6 = Sabato
-  
-  // Calcola quanti giorni indietro tornare per arrivare allo scorso Sabato
+  const giorno = ora.getDay(); // 0 = Dom, 6 = Sab
   const giorniDaSabato = (giorno + 1) % 7; 
 
   const inizio = new Date(ora);
@@ -32,16 +32,15 @@ export function getInizioSettimanaCorrente() {
 function leggiDati() {
   initDB();
   try {
+    if (!fs.existsSync(DB_PATH)) {
+      return { settimanaInizio: getInizioSettimanaCorrente(), vendite: [] };
+    }
     const data = fs.readFileSync(DB_PATH, 'utf-8');
     let json = JSON.parse(data);
 
     const inizioAttuale = getInizioSettimanaCorrente();
-    // Se è iniziata una nuova settimana (dopo Sabato 00:00), resetta automatico
     if (!json.settimanaInizio || json.settimanaInizio < inizioAttuale) {
-      json = {
-        settimanaInizio: inizioAttuale,
-        vendite: []
-      };
+      json = { settimanaInizio: inizioAttuale, vendite: [] };
       salvaDati(json);
     }
 
@@ -53,10 +52,14 @@ function leggiDati() {
 }
 
 function salvaDati(dati) {
-  fs.writeFileSync(DB_PATH, JSON.stringify(dati, null, 2));
+  try {
+    initDB();
+    fs.writeFileSync(DB_PATH, JSON.stringify(dati, null, 2));
+  } catch (err) {
+    console.error('Errore salvataggio DB vendite:', err);
+  }
 }
 
-// Salva una nuova vendita
 export function registraVendita(userId, username, importo) {
   const dati = leggiDati();
   dati.vendite.push({
@@ -68,24 +71,25 @@ export function registraVendita(userId, username, importo) {
   salvaDati(dati);
 }
 
-// Ottiene i dati della settimana corrente
 export function getResocontoSettimanale() {
   const dati = leggiDati();
   const dipendenti = {};
   let totaleAzienda = 0;
 
-  dati.vendite.forEach(v => {
-    totaleAzienda += v.importo;
-    if (!dipendenti[v.userId]) {
-      dipendenti[v.userId] = {
-        username: v.username,
-        totale: 0,
-        numeroVendite: 0
-      };
-    }
-    dipendenti[v.userId].totale += v.importo;
-    dipendenti[v.userId].numeroVendite += 1;
-  });
+  if (Array.isArray(dati.vendite)) {
+    dati.vendite.forEach(v => {
+      totaleAzienda += v.importo;
+      if (!dipendenti[v.userId]) {
+        dipendenti[v.userId] = {
+          username: v.username,
+          totale: 0,
+          numeroVendite: 0
+        };
+      }
+      dipendenti[v.userId].totale += v.importo;
+      dipendenti[v.userId].numeroVendite += 1;
+    });
+  }
 
   return {
     totaleAzienda,
@@ -94,10 +98,9 @@ export function getResocontoSettimanale() {
   };
 }
 
-// Reset manuale (se necessario)
 export function resetSettimanaManuale() {
-  const json = {
+  salvaDati({
     settimanaInizio: getInizioSettimanaCorrente(),
     vendite: []
-  };
-  salvaDati(json);
+  });
+}
