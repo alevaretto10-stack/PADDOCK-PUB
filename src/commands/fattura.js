@@ -3,7 +3,7 @@ import { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, StringSelectMenuBu
 export const PRODOTTI_FATTURA = [
   { label: '1x1 (1 Cibo + 1 Acqua)', value: '1x1', base: '$800', vip: '$1.500' },
   { label: '2x2 (2 Cibo + 2 Acqua)', value: '2x2', base: '$1.500', vip: '$3.000' },
-  { label: '3x3 (3 Cibo + 3 Acqua)', value: '3x3', base: '$3.500', vip: '$4.800' },
+  { label: '3x3 (3 Cibo + 3 Acqua)', value: '3x3', base: '$2.500', vip: '$4.800' },
   { label: '5x5 (5 Cibo + 5 Acqua)', value: '5x5', base: '$3.500', vip: '$5.800' },
   { label: '10x10 (10 Cibo + 10 Acqua)', value: '10x10', base: '$5.800', vip: '$11.500' },
   { label: '20x20 (20 Cibo + 20 Acqua)', value: '20x20', base: '$11.000', vip: '$22.500' },
