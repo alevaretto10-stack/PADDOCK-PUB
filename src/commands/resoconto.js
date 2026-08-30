@@ -22,7 +22,6 @@ export default {
   async execute(interaction) {
     const sub = interaction.options.getSubcommand();
 
-    // 1. RESET MANUALE
     if (sub === 'reset_manuale') {
       resetSettimanaManuale();
       return await interaction.reply({
@@ -49,7 +48,7 @@ export default {
       titoloPeriodo = '📜 Resoconto Settimana Scorsa';
     }
 
-    const { totaleAzienda, dipendenti } = getResocontoFiltrato(inizio, fine);
+    const { totaleAzienda, totaleFattureNormale, totaleRuota, dipendenti } = getResocontoFiltrato(inizio, fine);
 
     const strInizio = new Date(inizio).toLocaleDateString('it-IT');
     const strFine = new Date(fine).toLocaleDateString('it-IT');
@@ -61,7 +60,8 @@ export default {
       dipendenti.forEach((dip, index) => {
         const medaglia = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '👤';
         descrizioneDipendenti += `${medaglia} **<@${dip.userId}>** (${dip.username})\n` +
-                                 `└ Vendite: **${dip.numeroVendite}** | Incasso: **$${dip.totale.toLocaleString('it-IT')}**\n\n`;
+                                 `└ Vendite: **${dip.numeroVendite}** | Cibo/Acqua: **$${dip.totaleNormale.toLocaleString('it-IT')}** | Ruota: **$${dip.totaleRuota.toLocaleString('it-IT')}**\n` +
+                                 `└ **Totale Singolo: $${dip.totaleComplessivo.toLocaleString('it-IT')}**\n\n`;
       });
     }
 
@@ -70,9 +70,11 @@ export default {
       .setAuthor({ name: 'Paddock Pub | Direzione' })
       .setTitle(titoloPeriodo)
       .setDescription(`📅 **Periodo:** dal **${strInizio}** al **${strFine}**\n\n` +
+                      `💵 **Incasso Cibo & Bevande:** $${totaleFattureNormale.toLocaleString('it-IT')}\n` +
+                      `🎡 **Incasso Ruota della Fortuna:** $${totaleRuota.toLocaleString('it-IT')}\n` +
                       `💰 **FATTURATO TOTALE AZIENDA:** **$${totaleAzienda.toLocaleString('it-IT')}**\n` +
                       `───────────────────────────\n\n` +
-                      `🏆 **FATTURATO SINGOLI DIPENDENTI:**\n\n` +
+                      `🏆 **DETTAGLIO SINGOLI DIPENDENTI:**\n\n` +
                       descrizioneDipendenti)
       .setFooter({ text: 'Paddock Pub - Sistema Resoconti' })
       .setTimestamp();
