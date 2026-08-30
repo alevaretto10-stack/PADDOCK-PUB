@@ -1,7 +1,7 @@
 import { EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder } from 'discord.js';
 import { registraVendita } from '../utils/fatturatoManager.js';
 
-// Dati definiti direttamente per evitare problemi di importazione
+// Dati locali per garantire la stabilità ed evitare dipendenze circolari
 const PRODOTTI_FATTURA = [
   { label: '1x1 (1 Cibo + 1 Acqua)', value: '1x1', base: 800, vip: 1500 },
   { label: '2x2 (2 Cibo + 2 Acqua)', value: '2x2', base: 1500, vip: 3000 },
@@ -42,13 +42,13 @@ export default {
     if (!['select_fattura_base', 'select_fattura_vip', 'select_fattura_ruota'].includes(customId)) return;
 
     try {
-      // 1. Blocca subito il timer dei 3 secondi di Discord
+      // 1. Previene immediatamente l'errore "il bot non ha risposto"
       await interaction.deferUpdate();
 
       const isRuotaSelect = customId === 'select_fattura_ruota';
       const targetChannelName = isRuotaSelect ? 'vendita-ruote' : 'gestione-fatture';
 
-      // 2. Cerca il canale di destinazione
+      // 2. Cerca il canale nella cache o ricarica l'elenco dal server
       let canaleDestinazione = guild?.channels.cache.find(c => 
         c.name.toLowerCase().includes(targetChannelName)
       );
@@ -62,7 +62,7 @@ export default {
 
       if (!canaleDestinazione) {
         return await interaction.followUp({
-          content: `⚠️ **Errore:** Non ho trovato il canale \`#${targetChannelName}\`! Assicurati che esista e che il bot abbia i permessi necessari.`,
+          content: `⚠️ **Errore:** Non ho trovato il canale \`#${targetChannelName}\`! Assicurati che esista e che il bot abbia i permessi di lettura/scrittura.`,
           flags: 64
         });
       }
@@ -74,13 +74,16 @@ export default {
       let prezzoNumerico = 0;
       let coloreEmbed = '#10b981';
 
+      // GESTIONE RUOTA DELLA FORTUNA
       if (isRuotaSelect) {
         const opzioneRuota = OPZIONI_RUOTA.find(r => r.value === val);
         tipo = '🎡 RUOTA DELLA FORTUNA';
         taglio = opzioneRuota ? opzioneRuota.label : val;
         prezzoNumerico = opzioneRuota ? opzioneRuota.prezzo : 0;
         coloreEmbed = '#a855f7';
-      } else {
+      } 
+      // GESTIONE BASE E VIP
+      else {
         const isVip = val.startsWith('vip_');
         taglio = val.replace('base_', '').replace('vip_', '');
         tipo = isVip ? '⭐ VIP' : '🟢 BASE';
@@ -92,10 +95,11 @@ export default {
 
       const prezzoTesto = formatPrezzo(prezzoNumerico);
 
-      // Registra la vendita
-      registraVendita(user.id, user.username, prezzoNumerico);
+      // 3. REGISTRA LA VENDITA NEL DATABASE (Distinguendo RUOTA da NORMALE)
+      const tipoPerDb = isRuotaSelect ? 'RUOTA' : 'NORMALE';
+      registraVendita(user.id, user.username, prezzoNumerico, tipoPerDb);
 
-      // Invia log
+      // 4. Invia il messaggio di log nel canale di destinazione dedicato
       const embedLog = new EmbedBuilder()
         .setColor(coloreEmbed)
         .setTitle(isRuotaSelect ? '🎡 Vendita Ruota della Fortuna Registrata' : '🧾 Nuova Vendita Registrata')
@@ -112,7 +116,7 @@ export default {
 
       await canaleDestinazione.send({ embeds: [embedLog] });
 
-      // Rigenera i menu
+      // 5. Ripristina lo stato delle tendine nel pannello originale
       const selectBase = new StringSelectMenuBuilder()
         .setCustomId('select_fattura_base')
         .setPlaceholder('🟢 Seleziona vendita BASE...')
@@ -149,13 +153,14 @@ export default {
 
       await interaction.editReply({ components: [rowBase, rowVip, rowRuota] });
 
+      // 6. Messaggio privato di conferma al dipendente
       await interaction.followUp({
         content: `✅ Registrata vendita **${tipo}** (**${taglio}**) per **${prezzoTesto}**! Report inviato su ${canaleDestinazione}.`,
         flags: 64
       });
 
     } catch (error) {
-      console.error('Errore gestione fattura:', error);
+      console.error('Errore durante la registrazione della fattura:', error);
     }
   },
 };
