@@ -22,28 +22,35 @@ export default {
     const { customId, values, user, guild } = interaction;
     if (!['select_fattura_base', 'select_fattura_vip', 'select_fattura_ruota'].includes(customId)) return;
 
-    const isRuotaSelect = customId === 'select_fattura_ruota';
-
-    // Cerca il canale di destinazione in base al tipo di vendita
-    let canaleDestinazione;
-
-    if (isRuotaSelect) {
-      // Cerca il canale dedicato alle ruote
-      canaleDestinazione = guild?.channels.cache.find(c => 
-        c.name.toLowerCase().includes('vendita-ruote') || c.name.toLowerCase().includes('vendita_ruote')
-      );
-    } else {
-      // Cerca il canale per le fatture normali
-      canaleDestinazione = guild?.channels.cache.find(c => 
-        c.name.toLowerCase().includes('gestione-fatture') || c.name.toLowerCase().includes('gestione_fatture')
-      );
+    // 1. Risposta immediata a Discord per evitare il timeout dei 3 secondi
+    try {
+      await interaction.deferUpdate();
+    } catch (err) {
+      console.error('Errore durante il deferUpdate:', err);
     }
 
-    const nomeCanaleManche = isRuotaSelect ? '#vendita-ruote' : '#gestione-fatture';
+    const isRuotaSelect = customId === 'select_fattura_ruota';
+    const targetChannelName = isRuotaSelect ? 'vendita-ruote' : 'gestione-fatture';
+
+    // 2. Cerca il canale nella cache o ricarica tutti i canali del server
+    let canaleDestinazione = guild?.channels.cache.find(c => 
+      c.name.toLowerCase().includes(targetChannelName) || c.name.toLowerCase().replace('-', '_').includes(targetChannelName)
+    );
+
+    if (!canaleDestinazione && guild) {
+      try {
+        const fetchedChannels = await guild.channels.fetch();
+        canaleDestinazione = fetchedChannels.find(c => 
+          c && c.name.toLowerCase().includes(targetChannelName)
+        );
+      } catch (err) {
+        console.error('Errore nel caricamento dei canali:', err);
+      }
+    }
 
     if (!canaleDestinazione) {
-      return await interaction.reply({
-        content: `⚠️ **Errore:** Non ho trovato il canale \`${nomeCanaleManche}\`! Crealo o controlla i permessi del bot.`,
+      return await interaction.followUp({
+        content: `⚠️ **Errore:** Non ho trovato il canale \`#${targetChannelName}\`! Assicurati che esista e che il bot abbia i permessi di vederlo ed inviare messaggi.`,
         flags: 64
       });
     }
@@ -61,7 +68,7 @@ export default {
       tipo = '🎡 RUOTA DELLA FORTUNA';
       taglio = opzioneRuota ? opzioneRuota.label : val;
       prezzoNumerico = opzioneRuota ? opzioneRuota.prezzo : 0;
-      coloreEmbed = '#a855f7'; // Viola per la Ruota
+      coloreEmbed = '#a855f7';
     } 
     // GESTIONE BASE E VIP
     else {
@@ -79,7 +86,7 @@ export default {
     // REGISTRA LA VENDITA NEL DATABASE GENERALE
     registraVendita(user.id, user.username, prezzoNumerico);
 
-    // 1. Invio messaggio di report nel canale dedicato
+    // 3. Invio del report di vendita
     const embedLog = new EmbedBuilder()
       .setColor(coloreEmbed)
       .setTitle(isRuotaSelect ? '🎡 Vendita Ruota della Fortuna Registrata' : '🧾 Nuova Vendita Registrata')
@@ -96,7 +103,7 @@ export default {
 
     await canaleDestinazione.send({ embeds: [embedLog] });
 
-    // 2. Resetta le tendine
+    // 4. Ripristina lo stato del menu a tendina
     const selectBase = new StringSelectMenuBuilder()
       .setCustomId('select_fattura_base')
       .setPlaceholder('🟢 Seleziona vendita BASE...')
@@ -131,7 +138,7 @@ export default {
     const rowVip = new ActionRowBuilder().addComponents(selectVip);
     const rowRuota = new ActionRowBuilder().addComponents(selectRuota);
 
-    await interaction.update({ components: [rowBase, rowVip, rowRuota] });
+    await interaction.editReply({ components: [rowBase, rowVip, rowRuota] });
 
     await interaction.followUp({
       content: `✅ Registrata vendita **${tipo}** (**${taglio}**) per **${prezzoTesto}**! Report inviato su ${canaleDestinazione}.`,
