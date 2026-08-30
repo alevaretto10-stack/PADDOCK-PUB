@@ -22,13 +22,28 @@ export default {
     const { customId, values, user, guild } = interaction;
     if (!['select_fattura_base', 'select_fattura_vip', 'select_fattura_ruota'].includes(customId)) return;
 
-    const canaleFatture = guild?.channels.cache.find(c => 
-      c.name.toLowerCase().includes('gestione-fatture') || c.name.toLowerCase().includes('gestione_fatture')
-    );
+    const isRuotaSelect = customId === 'select_fattura_ruota';
 
-    if (!canaleFatture) {
+    // Cerca il canale di destinazione in base al tipo di vendita
+    let canaleDestinazione;
+
+    if (isRuotaSelect) {
+      // Cerca il canale dedicato alle ruote
+      canaleDestinazione = guild?.channels.cache.find(c => 
+        c.name.toLowerCase().includes('vendita-ruote') || c.name.toLowerCase().includes('vendita_ruote')
+      );
+    } else {
+      // Cerca il canale per le fatture normali
+      canaleDestinazione = guild?.channels.cache.find(c => 
+        c.name.toLowerCase().includes('gestione-fatture') || c.name.toLowerCase().includes('gestione_fatture')
+      );
+    }
+
+    const nomeCanaleManche = isRuotaSelect ? '#vendita-ruote' : '#gestione-fatture';
+
+    if (!canaleDestinazione) {
       return await interaction.reply({
-        content: '⚠️ **Errore:** Non ho trovato il canale `#gestione-fatture`!',
+        content: `⚠️ **Errore:** Non ho trovato il canale \`${nomeCanaleManche}\`! Crealo o controlla i permessi del bot.`,
         flags: 64
       });
     }
@@ -40,8 +55,8 @@ export default {
     let prezzoNumerico = 0;
     let coloreEmbed = '#10b981';
 
-    // GEZIONE RUOTA DELLA FORTUNA
-    if (customId === 'select_fattura_ruota') {
+    // GESTIONE RUOTA DELLA FORTUNA
+    if (isRuotaSelect) {
       const opzioneRuota = OPZIONI_RUOTA.find(r => r.value === val);
       tipo = '🎡 RUOTA DELLA FORTUNA';
       taglio = opzioneRuota ? opzioneRuota.label : val;
@@ -61,17 +76,17 @@ export default {
 
     const prezzoTesto = formatPrezzo(prezzoNumerico);
 
-    // REGISTRA LA VENDITA NEL DATABASE PER I RESOCONTI
+    // REGISTRA LA VENDITA NEL DATABASE GENERALE
     registraVendita(user.id, user.username, prezzoNumerico);
 
-    // 1. Invio messaggio di report su #gestione-fatture
+    // 1. Invio messaggio di report nel canale dedicato
     const embedLog = new EmbedBuilder()
       .setColor(coloreEmbed)
-      .setTitle('🧾 Nuova Vendita Registrata')
+      .setTitle(isRuotaSelect ? '🎡 Vendita Ruota della Fortuna Registrata' : '🧾 Nuova Vendita Registrata')
       .setDescription(`**${user.username}** ha registrato una vendita!`)
       .addFields(
         { name: '👤 Dipendente', value: `${user}`, inline: true },
-        { name: '📦 Pacchetto / Oggetto', value: `**${taglio}**`, inline: true },
+        { name: '📦 Pacchetto / Taglio', value: `**${taglio}**`, inline: true },
         { name: '🏷️ Categoria', value: `**${tipo}**`, inline: true },
         { name: '💰 Prezzo', value: `**${prezzoTesto}**`, inline: true },
         { name: '🕒 Orario (IT)', value: `**${orario}**`, inline: true }
@@ -79,7 +94,7 @@ export default {
       .setFooter({ text: 'Paddock Pub - Gestione Incassi' })
       .setTimestamp();
 
-    await canaleFatture.send({ embeds: [embedLog] });
+    await canaleDestinazione.send({ embeds: [embedLog] });
 
     // 2. Resetta le tendine
     const selectBase = new StringSelectMenuBuilder()
@@ -119,7 +134,7 @@ export default {
     await interaction.update({ components: [rowBase, rowVip, rowRuota] });
 
     await interaction.followUp({
-      content: `✅ Registrata vendita **${tipo}** (**${taglio}**) per **${prezzoTesto}**! Report inviato su ${canaleFatture}.`,
+      content: `✅ Registrata vendita **${tipo}** (**${taglio}**) per **${prezzoTesto}**! Report inviato su ${canaleDestinazione}.`,
       flags: 64
     });
   },
