@@ -38,49 +38,68 @@ function salvaDati(dati) {
   }
 }
 
-// Salva ogni vendita con il timestamp preciso
-export function registraVendita(userId, username, importo) {
+// Salva la vendita specificando se è "RUOTA" o "NORMALE"
+export function registraVendita(userId, username, importo, tipoVendita = 'NORMALE') {
   const dati = leggiDati();
   dati.vendite.push({
     userId,
     username,
     importo,
+    tipoVendita, // 'NORMALE' o 'RUOTA'
     timestamp: Date.now()
   });
   salvaDati(dati);
 }
 
-// Calcola i totali filtrate per un intervallo di tempo (in millisecondi)
+// Calcola i totali separando le vendite standard da quelle della ruota
 export function getResocontoFiltrato(inizioMs, fineMs) {
   const dati = leggiDati();
   const dipendenti = {};
-  let totaleAzienda = 0;
+  let totaleFattureNormale = 0;
+  let totaleRuota = 0;
 
   if (Array.isArray(dati.vendite)) {
     dati.vendite.forEach(v => {
-      // Controlla se la vendita rientra nel periodo richiesto
       if (v.timestamp >= inizioMs && v.timestamp <= fineMs) {
-        totaleAzienda += v.importo;
+        
+        // Divisione dei totali aziendali
+        if (v.tipoVendita === 'RUOTA') {
+          totaleRuota += v.importo;
+        } else {
+          totaleFattureNormale += v.importo;
+        }
+
+        // Conteggio per singolo dipendente
         if (!dipendenti[v.userId]) {
           dipendenti[v.userId] = {
             username: v.username,
-            totale: 0,
+            totaleNormale: 0,
+            totaleRuota: 0,
+            totaleComplessivo: 0,
             numeroVendite: 0
           };
         }
-        dipendenti[v.userId].totale += v.importo;
+
+        if (v.tipoVendita === 'RUOTA') {
+          dipendenti[v.userId].totaleRuota += v.importo;
+        } else {
+          dipendenti[v.userId].totaleNormale += v.importo;
+        }
+
+        dipendenti[v.userId].totaleComplessivo += v.importo;
         dipendenti[v.userId].numeroVendite += 1;
       }
     });
   }
 
   return {
-    totaleAzienda,
-    dipendenti: Object.values(dipendenti).sort((a, b) => b.totale - a.totale)
+    totaleAzienda: totaleFattureNormale + totaleRuota,
+    totaleFattureNormale,
+    totaleRuota,
+    dipendenti: Object.values(dipendenti).sort((a, b) => b.totaleComplessivo - a.totaleComplessivo)
   };
 }
 
-// Reset manuale: svuota tutte le vendite registrate
 export function resetSettimanaManuale() {
   salvaDati({ vendite: [] });
 }
